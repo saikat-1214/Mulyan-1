@@ -1,0 +1,59 @@
+import google.generativeai as genai
+import json
+
+# Initialize Gemini with the user's API Key
+genai.configure(api_key="YOUR_API_KEY_HERE")
+
+class AIPipeline:
+    def __init__(self):
+        print("Initializing Gemini AI Vision Pipeline...")
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        print("Gemini AI Pipeline Ready.")
+
+    def run(self, image_bytes: bytes) -> dict:
+        """
+        Executes the Gemini Vision pipeline on the input image bytes.
+        Returns parsed structured data.
+        """
+        prompt = '''
+        Analyze this product packaging label. Extract the following compliance details for Indian Legal Metrology.
+        Return ONLY a valid JSON object with no markdown formatting, no backticks, and no explanation.
+        If a field is not found, set its value to null.
+        Format:
+        {
+            "mrp": (float or null, extract only the numerical value),
+            "expiry_date": (string or null, e.g. "05/2027" or "6 Months from Mfg"),
+            "net_quantity": (string or null, e.g. "200g" or "1 L"),
+            "batch_no": (string or null, e.g. "BCH-123")
+        }
+        '''
+        
+        try:
+            response = self.model.generate_content([
+                prompt,
+                {"mime_type": "image/jpeg", "data": image_bytes}
+            ])
+            
+            text = response.text.strip()
+            
+            # Clean up markdown formatting if Gemini accidentally includes it
+            if text.startswith('```json'):
+                text = text[7:]
+            elif text.startswith('```'):
+                text = text[3:]
+            if text.endswith('```'):
+                text = text[:-3]
+                
+            parsed_data = json.loads(text.strip())
+            parsed_data["raw_text"] = ["Extracted via Gemini Vision 1.5"]
+            return parsed_data
+            
+        except Exception as e:
+            print("Gemini Extraction Error:", e)
+            return {
+                "mrp": None,
+                "expiry_date": None,
+                "net_quantity": None,
+                "batch_no": None,
+                "raw_text": [str(e)]
+            }
