@@ -15,8 +15,9 @@ class Role(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
+    name = Column(String, index=True, nullable=True)
     phone_email = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
     role = Column(String, default=Role.CONSUMER.value)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

@@ -25,15 +25,19 @@ class ComplianceEngine:
         # Check 2: Expired Product
         expiry_date = parsed_data.get("expiry_date")
         if expiry_date:
-            # Basic rudimentary check for MVP (assumes format like MM/YY or YYYY-MM)
-            # A real implementation would parse the string to datetime and compare
-            # Here we just mock the condition for demonstration
-            if "2024" in expiry_date or "24" in expiry_date: # Assume expired for mock
-                violations.append({
-                    "type": "EXPIRED_PRODUCT",
-                    "severity": "HIGH",
-                    "message": f"Product appears to be past expiry date ({expiry_date})"
-                })
+            try:
+                # Try common date formats: MM/YYYY, YYYY-MM, MM/YY, YYYY-MM-DD
+                from dateutil import parser as dateparser
+                parsed_expiry = dateparser.parse(expiry_date, dayfirst=False)
+                if parsed_expiry and parsed_expiry < datetime.now():
+                    violations.append({
+                        "type": "EXPIRED_PRODUCT",
+                        "severity": "HIGH",
+                        "message": f"Product appears to be past expiry date ({expiry_date})"
+                    })
+            except Exception:
+                # If we can't parse the date, skip the check
+                pass
                 
         # Check 3: Missing mandatory information
         missing_fields = []

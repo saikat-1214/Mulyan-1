@@ -1,8 +1,16 @@
 import google.generativeai as genai
 import json
+import os
+from dotenv import load_dotenv
 
-# Initialize Gemini with the user's API Key
-genai.configure(api_key="YOUR_API_KEY_HERE")
+# Load environment variables from .env file
+load_dotenv()
+
+# Initialize Gemini with the API Key from environment variable
+api_key = os.environ.get("GEMINI_API_KEY")
+if not api_key:
+    print("WARNING: GEMINI_API_KEY not found in environment. AI scanning will fail.")
+genai.configure(api_key=api_key or "")
 
 class AIPipeline:
     def __init__(self):

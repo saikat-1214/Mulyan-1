@@ -10,3 +10,5 @@ python-multipart==0.0.9
 pytesseract
 opencv-python
 ultralytics==8.1.24
+python-dotenv
+google-generativeai

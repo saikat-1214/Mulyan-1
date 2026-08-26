@@ -34,22 +34,73 @@ app.add_middleware(
 def read_root():
     return {"message": "Welcome to SIH26034 Legal Metrology API"}
 
+from app.auth import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, UserCreate, UserLogin, Token
+from datetime import timedelta
+
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
 
+@app.post("/api/auth/register", response_model=Token)
+def register(user: UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.phone_email == user.email).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    hashed_password = get_password_hash(user.password)
+    new_user = models.User(phone_email=user.email, hashed_password=hashed_password, role="CONSUMER")
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": new_user.phone_email}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/api/auth/login", response_model=Token)
+def login(user: UserLogin, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.phone_email == user.email).first()
+    if not db_user or not db_user.hashed_password:
+        raise HTTPException(status_code=400, detail="Incorrect email or password")
+    
+    if not verify_password(user.password, db_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Incorrect email or password")
+        
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": db_user.phone_email}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
 @app.post("/api/scan")
 async def scan_product(
     image: UploadFile = File(...),
-    selling_price: float = Form(None)
+    selling_price: float = Form(None),
+    latitude: float = Form(None),
+    longitude: float = Form(None)
 ):
     image_bytes = await image.read()
     parsed_data = ai_pipeline.run(image_bytes)
     violations = compliance_engine.evaluate(parsed_data, selling_price)
     
+    # Generate real SHA-256 evidence hash stamped with GPS + UTC
+    timestamp = datetime.utcnow().isoformat() + "Z"
+    evidence_hash = EvidenceVault.generate_hash(
+        image_bytes,
+        latitude or 0.0,
+        longitude or 0.0,
+        timestamp
+    )
+    
     return {
         **parsed_data,
-        "violations": violations
+        "violations": violations,
+        "evidence_hash": evidence_hash,
+        "evidence_timestamp": timestamp,
+        "evidence_latitude": latitude,
+        "evidence_longitude": longitude
     }
 
 @app.post("/api/evidence")

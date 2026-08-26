@@ -38,25 +38,54 @@ const AuthScreen = ({ onLogin }: { onLogin: () => void }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(''); setSuccess(''); setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      const usersDB = JSON.parse(localStorage.getItem('mulyan_users') || '{}');
+    
+    try {
       if (isLogin) {
-        if (usersDB[email] && usersDB[email] === password) onLogin();
-        else setError('Invalid email or password. Please try again or create an account.');
+        const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          localStorage.setItem('mulyan_token', data.access_token);
+          onLogin();
+        } else {
+          setError(data.detail || 'Invalid email or password.');
+        }
       } else {
-        if (password !== confirmPassword) return setError('Passwords do not match.');
-        if (usersDB[email]) return setError('An account with this email already exists.');
-        if (password.length < 6) return setError('Password must be at least 6 characters.');
-        usersDB[email] = password;
-        localStorage.setItem('mulyan_users', JSON.stringify(usersDB));
-        setSuccess('Account created successfully! Please log in.');
-        setIsLogin(true); setPassword(''); setConfirmPassword('');
+        if (password !== confirmPassword) {
+          setIsLoading(false);
+          return setError('Passwords do not match.');
+        }
+        if (password.length < 6) {
+          setIsLoading(false);
+          return setError('Password must be at least 6 characters.');
+        }
+        
+        const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          setSuccess('Account created successfully! Please log in.');
+          setIsLogin(true); setPassword(''); setConfirmPassword('');
+        } else {
+          setError(data.detail || 'Registration failed.');
+        }
       }
-    }, 1000);
+    } catch (err) {
+      setError('Network error. Is the server running?');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -134,8 +163,8 @@ const AuthScreen = ({ onLogin }: { onLogin: () => void }) => {
   );
 };
 
-// IMPORTANT: Set this to your localtunnel URL!
-const API_BASE_URL = "https://eager-words-sink.loca.lt";
+// Set this to your backend URL (localhost for dev, or your tunnel/deployed URL for production)
+const API_BASE_URL = "http://localhost:8000";
 
 // Responsive Shell Component
 const AppShell = ({ children, onLogout }: { children: React.ReactNode, onLogout: () => void }) => {
@@ -190,12 +219,28 @@ const Home = () => {
   const handleCameraCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      const formData = new FormData();
-      formData.append("image", file);
-      
       setIsScanning(true);
-      
+
       try {
+        // Step 1: Get live GPS coordinates
+        let latitude = 0.0;
+        let longitude = 0.0;
+        try {
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+          });
+          latitude = pos.coords.latitude;
+          longitude = pos.coords.longitude;
+        } catch {
+          console.warn("GPS unavailable, using default coordinates.");
+        }
+
+        // Step 2: Send image + GPS to backend for AI extraction + evidence hash
+        const formData = new FormData();
+        formData.append("image", file);
+        formData.append("latitude", latitude.toString());
+        formData.append("longitude", longitude.toString());
+
         const response = await fetch(`${API_BASE_URL}/api/scan`, {
           method: 'POST',
           body: formData,
@@ -264,28 +309,6 @@ const Home = () => {
 // Screen 1: Scan Results
 const ScanResults = () => {
   const location = useLocation();
-  const [locationCoords, setLocationCoords] = useState("Fetching location...");
-  const [currentTime, setCurrentTime] = useState("Fetching time...");
-
-  useEffect(() => {
-    const now = new Date();
-    setCurrentTime(now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC');
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
-          const latDir = lat >= 0 ? 'N' : 'S';
-          const lonDir = lon >= 0 ? 'E' : 'W';
-          setLocationCoords(`${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lon).toFixed(4)}° ${lonDir}`);
-        },
-        () => setLocationCoords("Location access denied")
-      );
-    } else {
-      setLocationCoords("Geolocation not supported");
-    }
-  }, []);
 
   // Fallback to mock data if accessed directly without scanning
   const scanData = location.state?.scanData || {
@@ -293,9 +316,33 @@ const ScanResults = () => {
     net_quantity: "200g",
     batch_no: "BCH-8992-X",
     expiry_date: "05/2027",
-    violations: [{ type: "MRP_VIOLATION", description: "The observed selling price suggests a violation." }]
+    violations: [{ type: "MRP_VIOLATION", description: "The observed selling price suggests a violation." }],
+    evidence_hash: null,
+    evidence_timestamp: null,
+    evidence_latitude: null,
+    evidence_longitude: null
   };
-  
+
+  // Format GPS from the real backend response
+  const formatGPS = (lat: number | null, lon: number | null) => {
+    if (lat == null || lon == null) return "Location unavailable";
+    const latDir = lat >= 0 ? 'N' : 'S';
+    const lonDir = lon >= 0 ? 'E' : 'W';
+    return `${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lon).toFixed(4)}° ${lonDir}`;
+  };
+
+  // Format UTC timestamp from the real backend response
+  const formatTimestamp = (ts: string | null) => {
+    if (!ts) return "Timestamp unavailable";
+    return ts.replace('T', ' ').substring(0, 19) + ' UTC';
+  };
+
+  const locationCoords = formatGPS(scanData.evidence_latitude, scanData.evidence_longitude);
+  const currentTime = formatTimestamp(scanData.evidence_timestamp);
+  const evidenceHash = scanData.evidence_hash || "Hash unavailable — scan via backend required";
+
+
+
   const imageUrl = location.state?.imageUrl || 'https://images.unsplash.com/photo-1607349913338-fca6f7fc42d0?auto=format&fit=crop&q=80&w=1200';
   
   const hasViolation = scanData.violations && scanData.violations.length > 0;
@@ -325,6 +372,9 @@ const ScanResults = () => {
         <ShieldCheck className="absolute -right-6 -bottom-6 w-32 h-32 text-blue-800/30 -z-0" />
         <div className="relative z-10">
           <h3 className="text-xs font-bold text-blue-300 uppercase tracking-widest mb-3 flex items-center"><Lock size={14} className="mr-1.5" /> Tamper-Proof Digital Footprint</h3>
+          <p className="text-[11px] md:text-xs text-blue-100/80 leading-relaxed mb-4">
+            We built a Tamper-Proof Digital Footprint. Every single photo taken inside Mulyan is instantly stamped with live GPS coordinates and a UTC timestamp. We then generate a SHA-256 cryptographic hash of the raw image data. This provides mathematically undeniable proof that the image is authentic and unaltered, making it legally admissible under the Legal Metrology Act.
+          </p>
           <div className="space-y-2.5 font-mono text-[10px] md:text-xs">
             <div className="flex justify-between items-center border-b border-blue-800/50 pb-2">
               <span className="text-blue-400">GPS Coordinates</span><span className="font-bold text-white flex items-center"><MapPin size={12} className="mr-1" /> {locationCoords}</span>
@@ -334,7 +384,7 @@ const ScanResults = () => {
             </div>
             <div className="flex flex-col gap-1 pt-1">
               <span className="text-blue-400">SHA-256 Cryptographic Hash</span>
-              <span className="font-bold text-emerald-400 break-all bg-black/30 p-2 rounded border border-black/50">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span>
+              <span className="font-bold text-emerald-400 break-all bg-black/30 p-2 rounded border border-black/50">{evidenceHash}</span>
             </div>
           </div>
           <div className="mt-4 inline-flex items-center text-[10px] bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full font-bold border border-emerald-500/30">
