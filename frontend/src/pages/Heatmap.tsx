@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { MapContainer, TileLayer, Popup, CircleMarker } from 'react-leaflet';
+import { useState, useMemo } from 'react';
+import { MapContainer, TileLayer, Popup, CircleMarker, Marker, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { ShieldAlert, Users, TrendingUp } from 'lucide-react';
+import { useLocationContext } from '../App';
 
 const mockHeatmapData = {
   data: [
@@ -20,9 +22,37 @@ const getSeverityColor = (severity: string) => {
   }
 };
 
+// Component to recenter the map when user location changes
+const RecenterMap = ({ lat, lng }: { lat: number; lng: number }) => {
+  const map = useMap();
+  useMemo(() => {
+    if (lat && lng) {
+      map.setView([lat, lng], 14, { animate: true });
+    }
+  }, [lat, lng, map]);
+  return null;
+};
+
+// Pulsing blue dot icon for user location
+const userLocationIcon = L.divIcon({
+  className: '',
+  html: `
+    <div style="position:relative;width:20px;height:20px;">
+      <div class="user-loc-dot" style="position:absolute;inset:0;border-radius:50%;background:#3b82f6;border:3px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
+    </div>
+  `,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+});
+
 export const Heatmap = () => {
   const [heatmapData] = useState(mockHeatmapData.data);
-  const centerPosition: [number, number] = [22.5726, 88.3639];
+  const { latitude: userLat, longitude: userLng, locationGranted } = useLocationContext();
+
+  // Use user location if granted, otherwise fall back to Kolkata
+  const centerPosition: [number, number] = locationGranted && userLat && userLng
+    ? [userLat, userLng]
+    : [22.5726, 88.3639];
 
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)] bg-gray-50">
@@ -37,6 +67,12 @@ export const Heatmap = () => {
           <p className="text-sm text-gray-500 leading-relaxed">
             Live geographic clusters of consumer grievances. Co-sign an issue to escalate its priority for local LMOs.
           </p>
+          {locationGranted && (
+            <div className="mt-3 flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 w-fit">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+              Centered on your location
+            </div>
+          )}
         </div>
         
         <div className="p-6 flex-1 overflow-y-auto">
@@ -66,7 +102,7 @@ export const Heatmap = () => {
       <div className="flex-1 relative z-0">
         <MapContainer 
           center={centerPosition} 
-          zoom={13} 
+          zoom={locationGranted ? 14 : 13} 
           style={{ height: '100%', width: '100%' }}
         >
           <TileLayer
@@ -74,6 +110,26 @@ export const Heatmap = () => {
             url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
           />
           
+          {/* Recenter map when user location updates */}
+          {locationGranted && userLat && userLng && (
+            <RecenterMap lat={userLat} lng={userLng} />
+          )}
+
+          {/* User location pulsing blue dot */}
+          {locationGranted && userLat && userLng && (
+            <Marker
+              position={[userLat, userLng]}
+              icon={userLocationIcon}
+            >
+              <Popup>
+                <div className="p-1 text-center">
+                  <div className="font-bold text-gray-900 mb-0.5">Your Location</div>
+                  <div className="text-xs text-gray-500">{userLat.toFixed(4)}, {userLng.toFixed(4)}</div>
+                </div>
+              </Popup>
+            </Marker>
+          )}
+
           {heatmapData.map((point) => (
             <CircleMarker
               key={point.id}

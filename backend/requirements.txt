@@ -3,7 +3,7 @@ uvicorn==0.27.1
 sqlalchemy
 psycopg2-binary
 geoalchemy2==0.14.4
-pydantic<2.0.0
+pydantic
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.9
@@ -11,4 +11,5 @@ pytesseract
 opencv-python
 ultralytics==8.1.24
 python-dotenv
-google-generativeai
+google-genai
+python-dateutil

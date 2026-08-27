@@ -1,4 +1,5 @@
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import json
 import os
 from dotenv import load_dotenv
@@ -10,12 +11,11 @@ load_dotenv()
 api_key = os.environ.get("GEMINI_API_KEY")
 if not api_key:
     print("WARNING: GEMINI_API_KEY not found in environment. AI scanning will fail.")
-genai.configure(api_key=api_key or "")
 
 class AIPipeline:
     def __init__(self):
         print("Initializing Gemini AI Vision Pipeline...")
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.client = genai.Client(api_key=api_key or "")
         print("Gemini AI Pipeline Ready.")
 
     def run(self, image_bytes: bytes) -> dict:
@@ -37,10 +37,13 @@ class AIPipeline:
         '''
         
         try:
-            response = self.model.generate_content([
-                prompt,
-                {"mime_type": "image/jpeg", "data": image_bytes}
-            ])
+            response = self.client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=[
+                    prompt,
+                    types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
+                ]
+            )
             
             text = response.text.strip()
             
