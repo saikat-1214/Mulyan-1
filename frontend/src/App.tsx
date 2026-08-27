@@ -403,58 +403,70 @@ const AppShell = ({ children, onLogout }: { children: React.ReactNode, onLogout:
   const location = useLocation();
   const { locationGranted, cityName, requestLocation } = useLocationContext();
   
+  const isScanActive = location.pathname === '/scan' || location.pathname === '/' || location.pathname === '/scan-results';
+  
   return (
-    <div className="bg-[#f8fafc] min-h-screen flex flex-col font-sans">
-      <header className="bg-white px-4 sm:px-8 py-4 flex items-center justify-between z-30 sticky top-0 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+    <div className="bg-[#f8fafc] min-h-screen flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900">
+      <header className="bg-white/80 backdrop-blur-xl px-4 sm:px-8 py-4 flex items-center justify-between z-30 sticky top-0 border-b border-gray-100/50 shadow-[0_4px_30px_rgb(0,0,0,0.03)] transition-all">
         <button className="p-2 -ml-2 text-gray-500 hover:bg-gray-100 rounded-full md:hidden transition-colors"><Menu size={24} /></button>
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center">
-            <ShieldCheck className="text-[#0f2e4a] w-7 h-7 mr-2" />
-            <h1 className="font-extrabold text-[#0052ff] text-xl tracking-tight">Mulyan</h1>
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#0052ff] to-[#3b82f6] flex items-center justify-center shadow-sm mr-2">
+              <ShieldCheck className="text-white w-5 h-5" strokeWidth={2.5} />
+            </div>
+            <h1 className="font-extrabold text-gray-900 text-xl tracking-tight">Mulyan</h1>
           </div>
           {/* Location indicator pill */}
           <button
             onClick={() => !locationGranted && requestLocation()}
-            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all shadow-sm ${
               locationGranted
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                : 'bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 cursor-pointer'
+                ? 'bg-emerald-50/80 text-emerald-700 border border-emerald-200/50 hover:bg-emerald-100/80'
+                : 'bg-red-50/80 text-red-500 border border-red-200/50 hover:bg-red-100/80 cursor-pointer'
             }`}
             title={locationGranted ? 'Location enabled' : 'Click to enable location'}
           >
-            <MapPin size={13} className={locationGranted ? 'text-emerald-500' : 'text-red-400'} />
+            <MapPin size={12} className={locationGranted ? 'text-emerald-500' : 'text-red-400'} />
             {locationGranted ? (cityName || 'Location on') : 'Location off'}
           </button>
         </div>
         
         <nav className="hidden md:flex items-center space-x-8 ml-8">
-          <Link to="/scan" className={`text-sm font-semibold flex items-center ${location.pathname === '/scan' || location.pathname === '/' ? 'text-[#0052ff]' : 'text-gray-500 hover:text-gray-900'}`}><Scan size={18} className="mr-1.5" /> Scan</Link>
-          <Link to="/complaints" className={`text-sm font-semibold flex items-center ${location.pathname === '/complaints' ? 'text-[#0052ff]' : 'text-gray-500 hover:text-gray-900'}`}><FileText size={18} className="mr-1.5" /> Complaints</Link>
-          <Link to="/heatmap" className={`text-sm font-semibold flex items-center ${location.pathname === '/heatmap' ? 'text-[#0052ff]' : 'text-gray-500 hover:text-gray-900'}`}><Bell size={18} className="mr-1.5" /> Alerts</Link>
-          <Link to="/dashboard" className={`text-sm font-semibold flex items-center ${location.pathname === '/dashboard' ? 'text-[#0052ff]' : 'text-gray-500 hover:text-gray-900'}`}><ShieldCheck size={18} className="mr-1.5" /> Dashboard</Link>
+          <Link to="/scan" className={`text-sm font-semibold flex items-center transition-colors ${isScanActive ? 'text-[#0052ff]' : 'text-gray-500 hover:text-gray-900'}`}><Scan size={18} className="mr-1.5" /> Scan</Link>
+          <Link to="/complaints" className={`text-sm font-semibold flex items-center transition-colors ${location.pathname === '/complaints' ? 'text-[#0052ff]' : 'text-gray-500 hover:text-gray-900'}`}><FileText size={18} className="mr-1.5" /> Complaints</Link>
+          <Link to="/heatmap" className={`text-sm font-semibold flex items-center transition-colors ${location.pathname === '/heatmap' ? 'text-[#0052ff]' : 'text-gray-500 hover:text-gray-900'}`}><Bell size={18} className="mr-1.5" /> Alerts</Link>
+          <Link to="/dashboard" className={`text-sm font-semibold flex items-center transition-colors ${location.pathname === '/dashboard' ? 'text-[#0052ff]' : 'text-gray-500 hover:text-gray-900'}`}><ShieldCheck size={18} className="mr-1.5" /> Dashboard</Link>
         </nav>
 
-        <button onClick={onLogout} className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 hover:border-[#0052ff] transition-colors" title="Log out">
+        <button onClick={onLogout} className="w-9 h-9 rounded-full overflow-hidden border-2 border-white shadow-sm ring-2 ring-gray-100 hover:ring-[#0052ff]/30 transition-all hover:scale-105" title="Log out">
           <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150" alt="Profile" className="w-full h-full object-cover" />
         </button>
       </header>
 
-      <main className="flex-1 overflow-y-auto pb-24 md:pb-8 w-full">{children}</main>
+      <main className="flex-1 overflow-y-auto pb-28 md:pb-8 w-full">{children}</main>
 
-      <nav className="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-100 flex justify-around items-center px-2 py-3 pb-safe z-40">
-        <Link to="/scan" className="flex flex-col items-center flex-1">
-          <div className={`${(location.pathname === '/scan' || location.pathname === '/') ? 'bg-[#0052ff] text-white px-6 py-1.5 rounded-full shadow-md shadow-blue-500/20' : 'text-gray-400 p-1.5'}`}><Scan size={24} /></div>
-          <span className={`text-[10px] font-bold mt-1 ${(location.pathname === '/scan' || location.pathname === '/') ? 'text-[#0052ff]' : 'text-gray-500'}`}>Scan</span>
-        </Link>
-        <Link to="/complaints" className="flex flex-col items-center flex-1">
-          <div className={`${location.pathname === '/complaints' ? 'bg-[#0052ff] text-white px-6 py-1.5 rounded-full shadow-md shadow-blue-500/20' : 'text-gray-400 p-1.5'}`}><FileText size={24} /></div>
-          <span className={`text-[10px] font-bold mt-1 ${location.pathname === '/complaints' ? 'text-[#0052ff]' : 'text-gray-500'}`}>Complaints</span>
-        </Link>
-        <Link to="/heatmap" className="flex flex-col items-center flex-1">
-          <div className={`${location.pathname === '/heatmap' ? 'bg-[#0052ff] text-white px-6 py-1.5 rounded-full shadow-md shadow-blue-500/20' : 'text-gray-400 p-1.5'}`}><Bell size={24} /></div>
-          <span className={`text-[10px] font-bold mt-1 ${location.pathname === '/heatmap' ? 'text-[#0052ff]' : 'text-gray-500'}`}>Alerts</span>
-        </Link>
-      </nav>
+      <div className="md:hidden fixed bottom-6 left-4 right-4 z-40 pointer-events-none flex justify-center">
+        <nav className="bg-white/90 backdrop-blur-xl border border-gray-200/50 shadow-[0_8px_30px_rgb(0,0,0,0.08)] rounded-3xl flex justify-around items-center px-2 py-2 w-full max-w-sm pointer-events-auto transition-all">
+          <Link to="/scan" className="flex flex-col items-center flex-1 py-1 relative group">
+            <div className={`transition-all duration-300 ease-out flex items-center justify-center ${isScanActive ? 'bg-gradient-to-b from-[#0052ff] to-[#0040cc] text-white w-12 h-10 rounded-2xl shadow-[0_4px_15px_rgba(0,82,255,0.3)]' : 'text-gray-400 w-10 h-10 group-hover:text-gray-700'}`}>
+              <Scan size={20} strokeWidth={isScanActive ? 2.5 : 2} />
+            </div>
+            <span className={`text-[10px] font-bold mt-1.5 transition-colors ${isScanActive ? 'text-[#0f2e4a]' : 'text-gray-400'}`}>Scan</span>
+          </Link>
+          <Link to="/complaints" className="flex flex-col items-center flex-1 py-1 relative group">
+            <div className={`transition-all duration-300 ease-out flex items-center justify-center ${location.pathname === '/complaints' ? 'bg-gradient-to-b from-[#0052ff] to-[#0040cc] text-white w-12 h-10 rounded-2xl shadow-[0_4px_15px_rgba(0,82,255,0.3)]' : 'text-gray-400 w-10 h-10 group-hover:text-gray-700'}`}>
+              <FileText size={20} strokeWidth={location.pathname === '/complaints' ? 2.5 : 2} />
+            </div>
+            <span className={`text-[10px] font-bold mt-1.5 transition-colors ${location.pathname === '/complaints' ? 'text-[#0f2e4a]' : 'text-gray-400'}`}>Complaints</span>
+          </Link>
+          <Link to="/heatmap" className="flex flex-col items-center flex-1 py-1 relative group">
+            <div className={`transition-all duration-300 ease-out flex items-center justify-center ${location.pathname === '/heatmap' ? 'bg-gradient-to-b from-[#0052ff] to-[#0040cc] text-white w-12 h-10 rounded-2xl shadow-[0_4px_15px_rgba(0,82,255,0.3)]' : 'text-gray-400 w-10 h-10 group-hover:text-gray-700'}`}>
+              <Bell size={20} strokeWidth={location.pathname === '/heatmap' ? 2.5 : 2} />
+            </div>
+            <span className={`text-[10px] font-bold mt-1.5 transition-colors ${location.pathname === '/heatmap' ? 'text-[#0f2e4a]' : 'text-gray-400'}`}>Alerts</span>
+          </Link>
+        </nav>
+      </div>
     </div>
   );
 };
@@ -591,42 +603,54 @@ const ScanResults = () => {
   const hasViolation = scanData.violations && scanData.violations.length > 0;
 
   return (
-    <div className="p-4 sm:p-8 max-w-xl mx-auto pb-10 bg-[#f8fafc] min-h-screen">
-      <h2 className="font-bold text-[#0f2e4a] text-lg md:text-xl mb-4">Real-time Scan Preview</h2>
-      
-      {/* Image Preview */}
-      <div className="bg-[#f1f5f9] p-2 md:p-3 rounded-2xl border border-gray-200 mb-4 shadow-sm">
-        <div className="border border-dashed border-[#0052ff]/50 rounded-xl overflow-hidden relative aspect-[4/3] md:aspect-[3/2] bg-cover bg-center" style={{ backgroundImage: `url('${imageUrl}')` }}>
-          {/* Mock YOLOv8 Bounding Boxes */}
-          <div className="absolute top-1/4 left-1/4 w-32 md:w-48 h-12 md:h-16 border-2 border-red-500 bg-red-500/10"></div>
-          <div className="absolute bottom-1/3 right-1/4 w-20 md:w-32 h-10 md:h-12 border-2 border-green-500 bg-green-500/10"></div>
-        </div>
+    <div className="p-4 sm:p-8 max-w-xl mx-auto pb-10 min-h-screen">
+      <div className="flex items-center justify-between mb-6 mt-2">
+        <h2 className="font-extrabold text-gray-900 text-xl tracking-tight">Real-time Scan</h2>
+        <span className="bg-blue-100 text-[#0052ff] text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center shadow-sm">
+          <div className="w-1.5 h-1.5 rounded-full bg-[#0052ff] animate-pulse mr-1.5"></div> Edge AI
+        </span>
       </div>
-      <div className="bg-white px-4 py-3 rounded-xl border border-gray-200 flex justify-between items-center mb-8 shadow-sm">
-        <div className="flex items-center text-emerald-700 text-[10px] font-bold">
-          <CheckCircle size={14} className="mr-1.5" /> OCR Confidence: High<br/>(94%)
-        </div>
-        <div className="text-gray-500 text-[10px] text-right">
-          Scan ID: #882-<br/>XQ
+      
+      {/* Image Preview with Animation */}
+      <div className="bg-white p-2 rounded-[2rem] border border-gray-100 mb-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+        <div className="rounded-[1.5rem] overflow-hidden relative aspect-[4/3] md:aspect-[3/2] bg-cover bg-center shadow-inner" style={{ backgroundImage: `url('${imageUrl}')` }}>
+          {/* Scanning Line Animation */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0052ff]/20 to-transparent h-1/3 animate-[scan-line_2.5s_linear_infinite] border-b border-[#0052ff]/50"></div>
+          
+          {/* Mock YOLOv8 Bounding Boxes with Glow */}
+          <div className="absolute top-1/4 left-1/4 w-32 md:w-48 h-12 md:h-16 border-2 border-red-500 bg-red-500/20 rounded-lg shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse"></div>
+          <div className="absolute bottom-1/3 right-1/4 w-20 md:w-32 h-10 md:h-12 border-2 border-emerald-400 bg-emerald-400/20 rounded-lg shadow-[0_0_10px_rgba(52,211,153,0.4)]"></div>
+          
+          <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/50 flex items-center shadow-lg">
+            <CheckCircle size={14} className="text-emerald-500 mr-1.5" />
+            <span className="text-[10px] font-bold text-gray-800">94% Confidence</span>
+          </div>
+          <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center text-white">
+            <span className="text-[10px] font-medium opacity-80">ID: #882-XQ</span>
+          </div>
         </div>
       </div>
 
-      <h2 className="font-bold text-[#0f2e4a] mb-4 text-lg md:text-xl">Extracted Compliance Data</h2>
+      <h2 className="font-extrabold text-gray-900 mb-5 text-xl tracking-tight">Extracted Data</h2>
       
       {/* Red Violation Box */}
       {hasViolation && (
-        <div className="bg-[#bc1b1b] text-white rounded-xl p-5 mb-6 shadow-md border border-[#9b1515]">
-          <div className="flex items-start mb-3">
-            <AlertCircle size={24} className="mr-3 mt-1 shrink-0 text-white" /> 
-            <h3 className="font-bold text-xl leading-tight">FAIL: Metrology<br/>Violation Detected</h3>
+        <div className="bg-gradient-to-br from-red-600 to-rose-700 text-white rounded-[2rem] p-6 mb-8 shadow-[0_10px_40px_-10px_rgba(225,29,72,0.5)] border border-red-500/50 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+          
+          <div className="flex items-start mb-4 relative z-10">
+            <div className="bg-white/20 p-2 rounded-xl mr-4 shrink-0 shadow-inner">
+              <AlertCircle size={28} className="text-white" strokeWidth={2.5} /> 
+            </div>
+            <h3 className="font-extrabold text-xl md:text-2xl leading-tight tracking-tight mt-0.5">Violation<br/>Detected</h3>
           </div>
-          <p className="text-[13px] text-white/95 leading-relaxed mb-4 ml-9">
+          <p className="text-sm text-white/90 leading-relaxed mb-6 font-medium relative z-10">
             {scanData.violations[0].description}
           </p>
-          <div className="border-t border-white/20 pt-4 mt-2">
-            <span className="text-[9px] font-bold text-white/80 uppercase tracking-widest block mb-1">LEGAL CONTEXT & JUSTIFICATION</span>
-            <p className="text-[11px] text-white/90 leading-relaxed">
-              Under Rule 6(1)(e) of the Legal Metrology (Packaged Commodities) Rules, 2011, every package shall bear a declaration of the retail sale price of the package. The declared MRP (₹40.00) format does not comply with the prescribed standard "MRP Rs. xx.xx (inclusive of all taxes)", and appears obscured or overwritten, rendering it non-compliant for consumer retail.
+          <div className="bg-black/20 rounded-xl p-4 relative z-10 backdrop-blur-sm border border-white/10">
+            <span className="text-[9px] font-bold text-white/70 uppercase tracking-widest block mb-2 flex items-center"><FileText size={10} className="mr-1.5"/> Legal Context</span>
+            <p className="text-[11px] text-white/80 leading-relaxed">
+              Under Rule 6(1)(e) of the Legal Metrology (Packaged Commodities) Rules, 2011, every package shall bear a declaration of the retail sale price of the package. The declared MRP format does not comply with the prescribed standard.
             </p>
           </div>
         </div>
@@ -634,61 +658,31 @@ const ScanResults = () => {
 
       {/* Extracted Data Cards */}
       <div className="space-y-3 mb-8">
-        <div className="bg-white p-3.5 rounded-xl border border-gray-200 flex justify-between items-center shadow-sm">
-          <div>
-            <span className="text-[10px] font-bold text-[#0f2e4a] uppercase flex items-center mb-1"><ShieldCheck size={12} className="mr-1"/> PRODUCT NAME</span>
-            <span className="text-sm font-bold text-gray-900">{scanData.product_name || "Biscuits (Premium)"}</span>
+        {[
+          { label: 'PRODUCT NAME', value: scanData.product_name || "Biscuits (Premium)", score: '98%', highlight: false },
+          { label: 'MRP DECLARED', value: `₹${scanData.mrp || "40.00"}`, score: '99%', highlight: true },
+          { label: 'NET QTY', value: scanData.net_quantity || "200g", score: '95%', highlight: false },
+          { label: 'BATCH NO', value: scanData.batch_no || "B24081", score: '91%', highlight: false },
+          { label: 'EXPIRY DATE', value: scanData.expiry_date || "05/2027", score: '92%', highlight: false },
+        ].map((item, i) => (
+          <div key={i} className={`p-4 rounded-[1.5rem] flex justify-between items-center transition-all duration-300 hover:scale-[1.01] ${item.highlight ? 'bg-red-50 border-2 border-red-200 shadow-sm' : 'bg-white border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]'}`}>
+            <div>
+              <span className={`text-[10px] font-bold uppercase flex items-center mb-1 ${item.highlight ? 'text-red-500' : 'text-gray-400'}`}>
+                {item.highlight ? <AlertTriangle size={12} className="mr-1.5"/> : <ShieldCheck size={12} className="mr-1.5"/>} {item.label}
+              </span>
+              <span className={`text-base font-extrabold ${item.highlight ? 'text-red-600 text-xl' : 'text-gray-900'}`}>{item.value}</span>
+            </div>
+            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${item.highlight ? 'bg-red-100 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>{item.score}</span>
           </div>
-          <span className="bg-[#a7f3d0] text-[#065f46] text-[10px] font-bold px-2 py-0.5 rounded">98%</span>
-        </div>
-
-        <div className="bg-[#fee2e2] p-3.5 rounded-xl border border-[#fca5a5] flex justify-between items-center shadow-sm">
-          <div>
-            <span className="text-[10px] font-bold text-[#bc1b1b] uppercase flex items-center mb-1"><AlertTriangle size={12} className="mr-1"/> MRP DECLARED</span>
-            <span className="text-xl font-black text-[#bc1b1b]">₹{scanData.mrp || "40.00"}</span>
-          </div>
-          <span className="bg-[#a7f3d0] text-[#065f46] text-[10px] font-bold px-2 py-0.5 rounded">99%</span>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-gray-200 flex justify-between items-center shadow-sm">
-          <div>
-            <span className="text-[10px] font-bold text-[#0f2e4a] uppercase flex items-center mb-1"><ShieldCheck size={12} className="mr-1"/> NET QTY</span>
-            <span className="text-sm font-bold text-gray-900">{scanData.net_quantity || "200g"}</span>
-          </div>
-          <span className="bg-[#a7f3d0] text-[#065f46] text-[10px] font-bold px-2 py-0.5 rounded">95%</span>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-gray-200 flex justify-between items-center shadow-sm">
-          <div>
-            <span className="text-[10px] font-bold text-[#0f2e4a] uppercase flex items-center mb-1"><ShieldCheck size={12} className="mr-1"/> BATCH NO</span>
-            <span className="text-sm font-bold text-gray-900">{scanData.batch_no || "B24081"}</span>
-          </div>
-          <span className="bg-[#a7f3d0] text-[#065f46] text-[10px] font-bold px-2 py-0.5 rounded">91%</span>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-gray-200 flex justify-between items-center shadow-sm">
-          <div>
-            <span className="text-[10px] font-bold text-[#0f2e4a] uppercase flex items-center mb-1"><ShieldCheck size={12} className="mr-1"/> EXPIRY DATE</span>
-            <span className="text-sm font-bold text-gray-900">{scanData.expiry_date || "05/2027"}</span>
-          </div>
-          <span className="bg-[#a7f3d0] text-[#065f46] text-[10px] font-bold px-2 py-0.5 rounded">92%</span>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-gray-200 flex justify-between items-center shadow-sm">
-          <div>
-            <span className="text-[10px] font-bold text-[#0f2e4a] uppercase flex items-center mb-1"><ShieldCheck size={12} className="mr-1"/> MANUFACTURER</span>
-            <span className="text-sm font-bold text-gray-900">{scanData.manufacturer || "XYZ Foods Pvt. Ltd."}</span>
-          </div>
-          <span className="bg-[#a7f3d0] text-[#065f46] text-[10px] font-bold px-2 py-0.5 rounded">88%</span>
-        </div>
+        ))}
       </div>
 
       <div className="flex flex-col gap-3">
-        <Link to="/generate-complaint" state={{ scanData }} className="w-full bg-[#0f172a] hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl shadow-md flex items-center justify-center transition-colors text-sm">
-          <FileText size={18} className="mr-2" /> Generate Complaint
+        <Link to="/generate-complaint" state={{ scanData }} className="w-full bg-gradient-to-r from-[#0052ff] to-[#0040cc] hover:from-[#0040cc] hover:to-[#0033a3] text-white font-bold py-4 rounded-2xl shadow-[0_8px_20px_rgba(0,82,255,0.25)] hover:shadow-[0_12px_25px_rgba(0,82,255,0.35)] flex items-center justify-center transition-all hover:-translate-y-0.5 text-sm">
+          <FileText size={18} className="mr-2" /> Generate Official Complaint
         </Link>
-        <button className="w-full bg-white hover:bg-gray-50 text-[#0f172a] font-bold py-3.5 rounded-xl shadow-sm border border-[#0f172a]/20 flex items-center justify-center transition-colors text-sm">
-          <FileText size={18} className="mr-2 text-[#0f172a]" /> Save Draft
+        <button className="w-full bg-white hover:bg-gray-50 text-gray-700 font-bold py-4 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-center transition-all text-sm">
+           Save to Drafts
         </button>
       </div>
     </div>
