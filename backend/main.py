@@ -14,8 +14,11 @@ from app.routing import GeoRouter
 # Initialize AI and Compliance modules
 ai_pipeline = AIPipeline()
 compliance_engine = ComplianceEngine()
+from sqlalchemy import text
 
 try:
+    with engine.begin() as conn:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
     Base.metadata.create_all(bind=engine)
 except Exception as e:
     print("Could not initialize DB tables, make sure the DB is running and PostGIS is enabled:", e)
