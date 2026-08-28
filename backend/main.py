@@ -51,21 +51,26 @@ def health_check(db: Session = Depends(get_db)):
 
 @app.post("/api/auth/register", response_model=Token)
 def register(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(models.User).filter(models.User.phone_email == user.email).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    hashed_password = get_password_hash(user.password)
-    new_user = models.User(phone_email=user.email, hashed_password=hashed_password, role="CONSUMER")
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": new_user.phone_email}, expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
+    try:
+        db_user = db.query(models.User).filter(models.User.phone_email == user.email).first()
+        if db_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        hashed_password = get_password_hash(user.password)
+        new_user = models.User(phone_email=user.email, hashed_password=hashed_password, role="CONSUMER")
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": new_user.phone_email}, expires_delta=access_token_expires
+        )
+        return {"access_token": access_token, "token_type": "bearer"}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 @app.post("/api/auth/login", response_model=Token)
 def login(user: UserLogin, db: Session = Depends(get_db)):
