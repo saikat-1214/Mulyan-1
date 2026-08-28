@@ -41,8 +41,13 @@ from app.auth import get_password_hash, verify_password, create_access_token, AC
 from datetime import timedelta
 
 @app.get("/health")
-def health_check():
-    return {"status": "healthy"}
+def health_check(db: Session = Depends(get_db)):
+    try:
+        # Check if tables exist by querying
+        count = db.query(models.User).count()
+        return {"status": "healthy", "user_count": count}
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e)}
 
 @app.post("/api/auth/register", response_model=Token)
 def register(user: UserCreate, db: Session = Depends(get_db)):
